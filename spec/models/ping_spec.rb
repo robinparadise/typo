@@ -49,13 +49,16 @@ describe 'Given a post which references a pingback enabled article' do
             referenced_url)
 
 
+      sleep 0.5
     a.should have(1).html_urls
     a.save!
+    sleep 0.5
     a.should be_just_published
     a = Article.find(a.id)
     a.should_not be_just_published
     # Saving again will not resend the pings
     a.save
+    sleep 0.5
   end
 
   def make_and_send_ping
