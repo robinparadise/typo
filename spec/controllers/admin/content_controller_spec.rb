@@ -671,4 +671,71 @@ describe Admin::ContentController do
 
     end
   end
+  
+  
+  
+  describe 'action merge' do
+
+    describe 'with no admin connection' do
+      
+      before :each do
+        Factory(:blog)
+        @user = Factory(:user, :text_filter => Factory(:markdown), :profile => Factory(:profile_publisher))
+        @article = Factory(:article, :user => @user)
+        request.session = {:user => @user.id}
+      end
+      
+      it 'should redirect to action index (admin content) with no admin user' do
+        Article.any_instance.should_not_receive(:merge_with)
+        post :merge, {:id => @article.id, :merge_with => @article.id}
+        response.should redirect_to(:action => 'index')
+      end
+      
+    end
+    
+    describe 'with admin connection' do
+
+      before do
+        Factory(:blog)
+        Profile.delete_all
+        @user = Factory(:user, :text_filter => Factory(:markdown), :profile => Factory(:profile_admin, :label => Profile::ADMIN))
+        @user.editor = 'simple'
+        @user.save
+        @article1 = Factory(:article, :title=>"ArticleOne", :author=>"One", :body=>"bodyOne ")
+        @article2 = Factory(:article, :title=>"ArticleTwo", :author=>"Two", :body=>"bodyTwo")
+        @merge = @article1
+        @merge.body = "bodyOne bodyTwo"
+        request.session = { :user => @user.id }
+      end
+      
+      it 'should call a model method "merge_with" to create the merged article' do
+        Article.any_instance.should_receive(:merge_with).with(@article2.id)
+        post :merge, {:id => @article1.id, :merge_with => @article2.id}
+        assigns[:article].should == @merge
+      end
+      
+      it 'should redirect to action index (admin content) after a successful merging' do
+        Article.any_instance.stub(:merge_with).and_return(@merge)
+        post :merge, {:id => @article1.id, :merge_with => @article2.id}
+        response.should redirect_to(:action => 'index')
+      end
+      
+      it 'should redirect to action edit when couldnt merge' do
+        Article.any_instance.stub(:merge_with).and_return(false)
+        post :merge, {:id => @article1.id, :merge_with => @article2.id}
+        response.should redirect_to(:action => 'edit', :id => @article1.id)
+      end
+      
+      it 'should redirect to action edit when both articles are the same' do
+        Article.any_instance.should_not_receive(:merge_with)
+        post :merge, {:id => @article1.id, :merge_with => @article1.id}
+        response.should redirect_to(:action => 'edit')
+      end
+      
+      
+    end
+    
+  end
+  
+  
 end
