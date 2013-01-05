@@ -415,6 +415,22 @@ class Article < Content
   def access_by?(user)
     user.admin? || user_id == user.id
   end
+  
+  # Merge Article
+  def merge_with (other_article_id)
+    # It means the article 2 doesnt exits
+    unless to_merge = Article.find_by_id(other_article_id)
+      return false
+    end
+    self.body = self.body + to_merge.body
+    to_merge.comments.each do |comment|
+      comment.article_id = self.id
+      comment.save!
+    end
+    self.save!
+    Article.find(to_merge.id).destroy
+    return self
+  end
 
   protected
 
