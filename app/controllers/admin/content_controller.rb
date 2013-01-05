@@ -10,6 +10,33 @@ class Admin::ContentController < Admin::BaseController
     @items = Tag.find_with_char params[:article][:keywords].strip
     render :inline => "<%= raw auto_complete_result @items, 'name' %>"
   end
+  
+  # Mege Articles
+  def merge
+    # only admin have rigths to access
+    if not current_user.admin?
+      redirect_to :action => 'index'
+      flash[:error] = _("Error, you are not allowed to perform this action")
+      return
+    end
+    
+    # It's not possible to merge the same article
+    if params[:id] == params[:merge_with]
+      redirect_to :action => 'edit', :id => params[:i]
+      flash[:error] = _("It's not possible to merge the same article") and return
+    end
+    
+    @article = Article.find(params[:id])
+
+    if !@article or !@article.merge_with(params[:merge_with])
+      redirect_to :action => 'edit', :id => params[:id]
+      flash[:error] = _("Error merging articles, article #{params[:id]} doesnt exist.")
+      return 
+    end
+    flash[:notice] = "Articles successfully merged!"
+    redirect_to :action => 'index'
+    
+  end
 
   def index
     @search = params[:search] ? params[:search] : {}
