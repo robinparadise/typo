@@ -630,5 +630,42 @@ describe Article do
     end
 
   end
+
+  describe "#merge_with" do
+    before(:each) do
+      @article1 = Article.create(:title => "Article 1", :author => "Pepa", :body => "Body 1")
+      @article2 = Article.create(:title => "Article 2", :author => "Pepo", :body => "Body 2")
+    end
+
+    it "should have the title of article_1" do
+      title = @article1.title
+      merge = @article1.merge_with(@article2.id)
+      merge.title.should == title
+    end
+    
+    it "should have the author of article_1" do
+      author = @article1.author
+      merge = @article1.merge_with(@article2.id)
+      assert_equal merge.author, author
+    end
+    
+    it "should have the body of article_1 + article_2" do
+      new_body = @article1.body + @article2.body
+      merge = @article1.merge_with(@article2.id)
+      assert_equal merge.body, new_body
+    end
+
+    it "The new article should have all comments" do
+      Factory(:comment, :article_id => @article1)
+      Factory(:comment, :article_id => @article2)
+      merge = @article1.merge_with(@article2.id)
+      assert_equal merge.comments.count, 2
+    end
+    
+    it "The second article should be destroyed" do
+      merge = @article1.merge_with(@article2.id)
+      assert !Article.find_by_id(@article2.id)
+    end
+  end
 end
 
